@@ -2,7 +2,9 @@
 import numpy as np
 from cached_property import cached_property
 from emcee import EnsembleSampler
+from emcee import backends # JSC
 from getdist import MCSamples
+import os
 
 from ..core import mpi
 from ..core.samplers import Sampler, run_map
@@ -18,11 +20,19 @@ class emcee(Sampler):
         # otherwise nwalkers is passed twice.
         if "nwalkers" in kwargs:
             del kwargs["nwalkers"]
+        # Preparing HDF backend
+        ChainFile = str(self._output_dir) + '/' + str(self._output_prefix) + '_EMCEE_Chains.h5'
+        try:
+            os.remove(ChainFile)
+        except FileNotFoundError:
+            pass
+        backend = backends.HDFBackend(ChainFile)
 
         return EnsembleSampler(
             log_prob_fn=self.likelihood,
             ndim=self.nparams,
             nwalkers=self.nwalkers,
+            backend=backend,
             **kwargs,
         )
 
